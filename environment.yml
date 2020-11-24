@@ -1,0 +1,10 @@
+name: OTcoupling
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::scikit-learn
+  - conda-forge::scipy
+  - conda-forge::matplotlib
+  - conda-forge::pot
+  - conda-forge::jupyter
+  - conda-forge::ipykernel 
