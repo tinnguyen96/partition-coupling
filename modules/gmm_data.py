@@ -12,7 +12,7 @@ sb.set_style('whitegrid')
 
 def make_experiment_name(Ndata, D, data_sd, data_sd0, data_alpha, data_K, data_seed, is_nested, sd, sd0, alpha):
     savedir = make_gmm_name(D, Ndata, data_alpha, data_sd, data_sd0, data_K, data_seed, is_nested)[1] + "/sd=%.2f_sd0=%.2f_alpha=%.2f" %(sd, sd0, alpha)
-    return savedir 
+    return savedir
 
 def make_gmm_name(D, Ndata, alpha, sd, sd0, K, seed, is_nested):
     name = "GMM_D=%d_N=%d_alpha=%.2f_sd=%.2f_sd0=%.2f_K=%d_seed=%d" %(D, Ndata, alpha, sd, sd0, K, seed)
@@ -55,22 +55,22 @@ def make_gmm_data(directory, D, Ndata, alpha, sd, sd0, K, seed):
     # draw each data point according to the cluster-specific
     # likelihood of its component
     x = mu[z] + np.random.normal(scale=sd, size=[Ndata,D])  # (Ndata, D) array
-    
+
     # make save folders
     savename = directory + make_gmm_name(D, Ndata, alpha, sd, sd0, K, seed)[1]
     savename_as_pkl = savename + ".pkl"
-    
+
     diction = {"data":x}
-    
+
     # visualize
     if (D == 1):
-        min_range, max_range = np.min(mu)-sd0, np.max(mu)+sd0, 
+        min_range, max_range = np.min(mu)-sd0, np.max(mu)+sd0,
         delta = (max_range-min_range)/150
         grid = np.arange(min_range, max_range, delta)
         ppd = np.zeros(grid.shape[0])
         for k in range(K):
             ppd += rho[k]*stats.norm(loc=mu[k], scale=sd).pdf(grid)
-        
+
         plt.figure()
         plt.hist(x, density=True, label='histogram')
         plt.plot(grid, ppd, label="density")
@@ -81,21 +81,21 @@ def make_gmm_data(directory, D, Ndata, alpha, sd, sd0, K, seed):
         print("Will save figure to %s" %savefigpath)
         plt.savefig(savefigpath)
         diction["density"] = (grid, ppd)
-        
+
     print("Will save data to %s" %savename_as_pkl)
     a_file = open(savename_as_pkl, "wb")
     pickle.dump(diction, a_file)
     a_file.close()
-    
+
     return x
 
 def make_nested_gmm_data(Ndata, smallNdata_list, directory, D, alpha, sd, sd0, K, seed):
     """
-    Make one gmm data set of length topNdata, and take subsets to 
+    Make one gmm data set of length topNdata, and take subsets to
     mimick collecting more observations from a iid process.
     This function exists because make_gmm_data as it is written
-    doesn't preserve the nestedness among different Ndata. It would 
-    have been preserved if we used a loop and sample each z and x in 
+    doesn't preserve the nestedness among different Ndata. It would
+    have been preserved if we used a loop and sample each z and x in
     a sequential manner.
     """
     # this will seed both np.random and stats distributions
@@ -110,16 +110,16 @@ def make_nested_gmm_data(Ndata, smallNdata_list, directory, D, alpha, sd, sd0, K
     # draw each data point according to the cluster-specific
     # likelihood of its component
     x = mu[z] + np.random.normal(scale=sd, size=[Ndata,D])  # (Ndata, D) array
-    
+
     # evaluate density on grid
     if (D == 1):
-        min_range, max_range = np.min(mu)-sd0, np.max(mu)+sd0, 
+        min_range, max_range = np.min(mu)-sd0, np.max(mu)+sd0,
         delta = (max_range-min_range)/150
         grid = np.arange(min_range, max_range, delta)
         ppd = np.zeros(grid.shape[0])
         for k in range(K):
             ppd += rho[k]*stats.norm(loc=mu[k], scale=sd).pdf(grid)
-        
+
     is_nested = True
     for N in smallNdata_list:
         subset_x = x[range(N)]
@@ -127,7 +127,7 @@ def make_nested_gmm_data(Ndata, smallNdata_list, directory, D, alpha, sd, sd0, K
         savename = directory + make_gmm_name(D, N, alpha, sd, sd0, K, seed, is_nested)[1]
         savename_as_pkl = savename + ".pkl"
         diction = {"data":subset_x}
-        
+
         # visualize
         if (D == 1):
             plt.figure()
@@ -140,13 +140,13 @@ def make_nested_gmm_data(Ndata, smallNdata_list, directory, D, alpha, sd, sd0, K
             print("Will save figure to %s" %savefigpath)
             plt.savefig(savefigpath)
             diction["density"] = (grid, ppd)
-            
+
         print("Will save data to %s" %savename_as_pkl)
         a_file = open(savename_as_pkl, "wb")
         pickle.dump(diction, a_file)
         a_file.close()
 
-    return 
+    return
 
 def load_gmm_data(directory, D, Ndata, alpha, sd, sd0, K, seed, is_nested):
     savename = directory + make_gmm_name(D, Ndata, alpha, sd, sd0, K, seed, is_nested)[0]
@@ -162,7 +162,7 @@ def load_gmm_data(directory, D, Ndata, alpha, sd, sd0, K, seed, is_nested):
 
 if __name__ == "__main__":
     K = 6
-    D = 1 
+    D = 1
     Ndata = 500
     smallNdata_list = [100, 200, 300, 400, 500]
     sd, sd0, alpha = 2., 10., 0.5
@@ -171,4 +171,4 @@ if __name__ == "__main__":
     #for Ndata in Ndata_list:
     #    make_gmm_data(directory, D, Ndata, alpha, sd, sd0, K, seed)
     make_nested_gmm_data(Ndata, smallNdata_list, directory, D, alpha, sd, sd0, K, seed)
-    
+

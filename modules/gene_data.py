@@ -4,11 +4,10 @@ Load gene expression data
 import pandas as pd
 import numpy as np
 import pickle
-from scipy import stats
 
 def make_experiment_name(dataroot, Ndata, D, sd,sd0, alpha):
     savedir = make_gene_name(dataroot, Ndata, D)[1] + "/sd=%.2f_sd0=%.2f_alpha=%.2f" %(sd,sd0, alpha)
-    return savedir 
+    return savedir
 
 def make_gene_name(dataroot, Ndata, D):
     name = "%s_data_Ndata=%d_D=%d" %(dataroot, Ndata, D)

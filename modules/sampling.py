@@ -1,18 +1,11 @@
-"""
-Modules calling sampling.py need to seed the randomness.
-
-gibbs_sweep_single():
-
-gibbs_sweep_couple():
-
-"""
+"""sampling.py contains methods for simulating Gibbs samplers on partitions
+with and without couplings"""
 
 import numpy as np
 import utils
 
 def pop_idx(z, clusts, n):
     """pop_idx removes the datapoint n from the current cluster assignments
-
 
     z[n] is temporarily set to max int (to cause an error if we try to access
         that cluster)
@@ -24,8 +17,6 @@ def pop_idx(z, clusts, n):
 
     Returns:
         updated labels, clusters, and index of removed cluster (or None if no cluster was removed)
-
-
     """
     c = z[n]
     z[n] = np.iinfo(z.dtype).max # set
@@ -42,24 +33,6 @@ def pop_idx(z, clusts, n):
         removed_cluster = None
     return z, clusts, removed_cluster
 
-def gibbs_sweep_single(data, z, sd, sd0, alpha=0.01):
-    clusts = utils.z_to_clusts(z)  # initial data counts at each cluster
-    # take a Gibbs step at each data point
-    for n in range(len(data)):
-        # get rid of the nth data point and relabel clusters if needed
-        z, clusts, _ = pop_idx(z, clusts, n)
-
-        # sample which cluster this point should belong to
-        loc_probs = utils.weights_n(data, clusts, sd, sd0, alpha, n)
-        newz = np.random.choice(len(loc_probs), p=loc_probs)
-
-        # if necessary, instantiate a new cluster
-        if newz == len(clusts): clusts.append(set())
-
-        # update cluster assignments
-        clusts[newz].add(n)
-        z[n] = newz
-    return z
 
 def crp_gibbs(data, sd, sd0, initz, alpha=0.01, plot=False, log_freq=None, maxIters=100):
     """crp_gibbs runs a gibbs sampler
@@ -112,9 +85,20 @@ def forward_one_chain(lag, data, sd, sd0, alpha, debug=False):
         print(initz2)
     return (initz1, initz2)
 
-## ------------------------------------------------------------------
-
 def gibbs_sweep_single(data, z, sd, sd0, alpha=0.01):
+    """gibbs_sweep_single runs through a Gibbs sweep for a single chain for
+    explort the DP-MM posterior.
+
+    Args:
+        data: np.array of observations of shape N by D, where N is the
+            number of data-points.
+        z: labelings at start of sweep.
+        sd, sd0: likelihood and prior standard deviations.
+        alpha: DP prior parameter.
+
+    Returns:
+        New labelings after Gibbs sweep.
+    """
     clusts = utils.z_to_clusts(z)  # initial data counts at each cluster
     # take a Gibbs step at each data point
     for n in range(len(data)):
@@ -128,10 +112,9 @@ def gibbs_sweep_single(data, z, sd, sd0, alpha=0.01):
         # if necessary, instantiate a new cluster
         if newz == len(clusts): clusts.append(set())
 
-        # update cluster assigments
+        # update cluster assignments
         clusts[newz].add(n)
         z[n] = newz
-
     return z
 
 def gibbs_sweep_couple(data, z1, z2, sd, sd0, alpha=0.01, coupling="Maximal"):
@@ -151,7 +134,8 @@ def gibbs_sweep_couple(data, z1, z2, sd, sd0, alpha=0.01, coupling="Maximal"):
     Returns:
         updated labelings for both chains
 
-    We compute intersection sizes once at the start and then update it for better time complexity.
+    We compute intersection sizes once at the start and then update it for
+    better amortized time complexity.
     """
     # Compute clusters and intersection sizes from scratch once
     clusts1, clusts2 = utils.z_to_clusts(z1), utils.z_to_clusts(z2)  # initial data counts at each cluster
@@ -187,9 +171,8 @@ def gibbs_sweep_couple(data, z1, z2, sd, sd0, alpha=0.01, coupling="Maximal"):
             assert coupling=="Optimal"
             pairwise_dists = utils.pairwise_dists(clusts1, clusts2, intersection_sizes)
 
-            _, (newz1, newz2), _ = utils.optimal_coupling(
-                loc_probs1, loc_probs2, pairwise_dists, normalize=True,
-                change_size=100)
+            newz1, newz2 = utils.optimal_coupling(loc_probs1, loc_probs2,
+                    pairwise_dists, normalize=True, change_size=100)
 
         # if necessary, instantiate a new cluster and pad intersection_sizes appropriately
         if newz1 == len(clusts1):
@@ -206,11 +189,11 @@ def gibbs_sweep_couple(data, z1, z2, sd, sd0, alpha=0.01, coupling="Maximal"):
 
     # Check that intersection and pairwise distances have been computed and
     # tracked correctly.
-    intersection_sizes_correct = np.array( [[len(c1.intersection(c2)) for c2 in clusts2] for c1 in clusts1])
-    assert np.alltrue(intersection_sizes==intersection_sizes_correct)
+    #intersection_sizes_correct = np.array( [[len(c1.intersection(c2)) for c2 in clusts2] for c1 in clusts1])
+    #assert np.alltrue(intersection_sizes==intersection_sizes_correct)
 
-    pairwise_dists = utils.pairwise_dists(clusts1, clusts2, intersection_sizes)
-    pairwise_dists_correct = utils.pairwise_dists(clusts1, clusts2)
-    assert np.alltrue(intersection_sizes==intersection_sizes_correct)
+    #pairwise_dists = utils.pairwise_dists(clusts1, clusts2, intersection_sizes)
+    #pairwise_dists_correct = utils.pairwise_dists(clusts1, clusts2)
+    #assert np.alltrue(intersection_sizes==intersection_sizes_correct)
 
     return z1, z2

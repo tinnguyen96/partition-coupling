@@ -1,3 +1,5 @@
+"""utils.py contains utility functions used for simulating and evaluating
+couplings of Gibbs samplers on partitions."""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -21,8 +23,6 @@ def pad_with_zeros(arr, axis):
     arr_pad[:D1,:D2] = arr
     return arr_pad
 
-
-
 def adj_matrix(z, clusts):
     """adj_matrix computes the adjacency matrix implied by z and clusts"""
     Ndata = len(z)
@@ -44,11 +44,17 @@ def adj_dists(A1, A2):
 def adj_dists_fast(clusts1, clusts2):
     """computes distance between adjacency matrices implied by partions without instantiating them.
 
+    This is pricesly the metric in Mirkin and Chernyi (1)
+
     This is faster than first computing adjacency matrices and then using
     adj_dists when the number of clusters is small.
 
     I got here through somewhat convoluted reasoning, but I'm pretty sure
     this should work (and it seems to work empirically).
+
+    References:
+    (1) BG Mirkin and LB Chernyi. Measurement of the distance between distinct
+    partitions of a finite set of objects. Autom Tel, 5:120–127, 1970.
     """
     # sum of square set sizes
     dist = sum(len(c)**2  for c in clusts1) + sum(len(c)**2 for c in clusts2) - 2*sum(
@@ -56,12 +62,27 @@ def adj_dists_fast(clusts1, clusts2):
     return dist
 
 def pairwise_dists(clusts1, clusts2, intersect_sizes=None, allow_new_clust=True):
-    """pairwise_dists computes the __increase__ in distance between the partitions defined by clusts1 and clusts2
-    upon the addition of an additional point to either an existing cluster or adding a new cluster.
+    """pairwise_dists computes the __increase__ in distance between the
+    partitions defined by clusts1 and clusts2 upon the addition of an additional
+    point to either an existing cluster or adding a new cluster.
+
+    Notably, computing the increase is sufficient for solving the optimal
+    transport problem.
+
+
+    If provided the sizes of the intersections between each pair of clusters
+    (one from clusts1 and another from clusts2) are used to facilite fast
+    computation.  In particular, computing the sizes of intersections from
+    scratch scales linearly with the cluster sizes.  By contrast, by
+    dynamically updating these sizes whenever the cluster assignments are
+    modified we can compute pairwise distances with scaling that does not
+    depend on cluster size.
 
     Args:
         clusts1, clusts2: lists of sets of the ids of datapoints in each
             cluster.
+        intersect_sizes: np.array of sizes of intersections of size
+            len(clusts1) by len(clusts2).
         allow_new_clust: whether to additionally compute distances for
             adding points to a new cluster, beyond those represented in
             clusts1 and clusts2.
@@ -73,6 +94,9 @@ def pairwise_dists(clusts1, clusts2, intersect_sizes=None, allow_new_clust=True)
     """
     clusts1, clusts2 = list(clusts1), list(clusts2)
     if allow_new_clust:
+        # Handle possibility of adding a new cluster by adding a new empty
+        # cluster.  Since all copies are local, this does not impact out of
+        # scope variables.
         clusts1.append(set())
         clusts2.append(set())
 
@@ -94,7 +118,7 @@ def pairwise_dists(clusts1, clusts2, intersect_sizes=None, allow_new_clust=True)
             # matrix is equal to the size of the 'outersection' of the two
             # clusters to which the point would be added.  This size may be
             # computed as below, the sum of the cardinalties minus twice the
-            # cardinality of the intersection.
+            # cardinality of the intersection.  See also Mirkin and Chernyi.
             dists[k, m] = len(clust1) + len(clust2) - 2*n_intersect
 
     # multiply distances by two, since adjacency matrix is symmetric.  The
@@ -104,6 +128,9 @@ def pairwise_dists(clusts1, clusts2, intersect_sizes=None, allow_new_clust=True)
     return dists
 
 def plot_clusts(data, clusts, ax=None):
+    """plot_clusts plots data colored by cluster for the Dirichlet process
+    mixture model.
+    """
     if ax == None:
         ax = plt.subplot(111)
         show=True
@@ -124,9 +151,16 @@ def weights_n(data, clusts, sd, sd0, alpha, n):
     """weights_n copmutes probabilities of assignments for the Gibbs
     sampler.
 
+    This code is for a single chain -- for coupled chains, this will be
+    called twice (once for each chain).
+
+    This code is adapted & translated to Python from
+    github.com/tbroderick/mlss2015_bnp_tutorial/blob/master/ex5_dpmm.R,
+    A tutorial by Tamara Broderick on Bayesian nonparametrics at the 2015
+    machine learning summer school.
+
     This does the same as weights_n but takes advantage of diagonal
     structure of covariance matrices for faster computation.
-
 
     Args:
         data: numpy array of data of shape [N, D]
@@ -178,69 +212,17 @@ def weights_n(data, clusts, sd, sd0, alpha, n):
     loc_probs = loc_probs / sum(loc_probs)
     return loc_probs
 
-def weights_n_dense_invert(data, clusts, sd, sd0, alpha, n):
-    """weights_n_dense_invert copmutes probabilities of assignments for the Gibbs
-    sampler.
-
-    This is adapted (/translated) from Tamara's code.
-    It could be made much more efficient (due to my inefficient
-    python translation).
-
-    Args:
-        data: numpy array of data of shape [N, D]
-        clusts: list of the memberships of each cluster (list of list of
-            int)
-        sd, sd0: observation variance and component mean variance (scalars)
-        alpha: DP parameter controlling dispersion of mixing proportions
-        n: index of data-point for which to compute Gibbs conditional
-    """
-    # dimension of the data points
-    data_dim = data.shape[1]
-    # cluster-specific covariance matrix
-    Sig = (sd**2)*np.eye(data_dim)
-    # prior covariance matrix
-    Sig0 = (sd0**2)* np.eye(data_dim)
-    # cluster-specific precision (Sig^{-1})
-    Prec = np.linalg.inv(Sig)
-    # prior precision (Sig^{-1})
-    Prec0 = np.linalg.inv(Sig0)
-    # prior mean on cluster parameters
-    mu0 = np.zeros(data_dim)
-    Nclust = len(clusts)  # initial number of clusters
-
-    # unnormalized log probabilities for the clusters
-    log_weights = np.zeros(Nclust + 1)
-    # find the unnormalized log probabilities
-    # for each existing cluster
-    for c in range(Nclust):
-        clust_c = list(clusts[c])
-        c_Precision = Prec0 + len(clust_c) * Prec
-        c_Sig = np.linalg.inv(c_Precision)
-        # find all of the points in this cluster
-        # sum all the points in this cluster
-        sum_data = np.sum(data[clust_c], axis=0)
-        c_mean = c_Sig.dot(Prec.dot(sum_data) + Prec0.dot(mu0))
-        log_weights[c] = np.log(len(clust_c)) + stats.multivariate_normal.logpdf(
-            data[n], mean = c_mean, cov = c_Sig + Sig)
-
-    # find the unnormalized log probability
-    # for the "new" cluster
-    log_weights[Nclust] = np.log(alpha) + stats.multivariate_normal.logpdf(
-        data[n], mean = mu0, cov = Sig0 + Sig)
-
-    # transform unnormalized log probabilities
-    # into probabilities
-    max_weight = max(log_weights)
-    log_weights = log_weights - max_weight
-    loc_probs = np.exp(log_weights)
-    loc_probs = loc_probs / sum(loc_probs)
-    return loc_probs
-
-
 def z_to_clusts(z, total_clusts=None):
     """z_to_clusts computes the datapoints in each cluster
 
-    if total_clusts is not none, we fill in that number with empty clusters
+    Args:
+        z: array of labelings of the n datapoints.  Indexing starts at zero.
+        total_clusts: if not None, fill up to that number with empty
+            clusters.
+
+    Returns:
+        list of cluster memberships, e.g. second element is a list of
+            indices of datapoints in the second cluster.
     """
     clusts = []
     N_clust = max(z)+1
@@ -252,40 +234,33 @@ def z_to_clusts(z, total_clusts=None):
 
     if total_clusts is not None and len(clusts) < total_clusts:
         clusts.extend([set() for _ in range(total_clusts - len(clusts))])
-
     return clusts
 
 def dist_from_labeling(v1, v2):
     """dist_from_labeling computes the distance between partitions implied by the labeling
+
+    cluster memberships implied by labelings are first computed, and then
+    used to calculate a partition based distance metric.
+
+    Args:
+        v1, v2: label based representation partitions.
+
+    Returns:
+        distance between implied partitions.
     """
     clusts1, clusts2 = z_to_clusts(v1), z_to_clusts(v2)
     dist = adj_dists_fast(clusts1, clusts2)
     return dist
 
-def overlap_score(clusts1, clusts2, perm_of_2):
-    min_nclust = min([len(clusts1), len(clusts2)])
-    score = 0
-    clusts2_reorder = [clusts2[i] for i in perm_of_2]
-    for c1, c2 in zip(clusts1[:min_nclust], clusts2_reorder[:min_nclust]):
-        score += len(c1.intersection(c2))
-    return score
-
-def match_clust(clusts1, clusts2):
-    perms = list(itertools.permutations(range(len(clusts2))))
-    overlap_scores = [overlap_score(clusts1, clusts2, perm) for perm in perms]
-    opt_perm = perms[np.argmax(overlap_scores)]
-
-    clusts2_match = [clusts2[i] for i in opt_perm]
-    Ndata = sum(len(clust) for clust in clusts2)
-
-    # compute cluster assignments as an array
-    z2 = -np.ones(Ndata, dtype=np.int) # unassigned datapoints index as -1
-    for c, clust in enumerate(clusts2_match): z2[list(clust)] = c
-
-    return z2, clusts2_match
-
 ### Partition couplings
 def naive_coupling(loc_probs1, loc_probs2):
+    """naive_coupling computes a common random number generator coupling of
+    the two provided discrete marginals.
+
+    Args:
+        loc_probs1, loc_probs2: marginal PMFs
+    Returns: sample from the coupling.
+    """
     # use same random number at each step
     u_In = np.random.uniform()
     newz1 = np.where(u_In<np.cumsum(loc_probs1))[0][0]
@@ -293,6 +268,16 @@ def naive_coupling(loc_probs1, loc_probs2):
     return newz1, newz2
 
 def max_coupling(loc_probs1, loc_probs2):
+    """max_coupling samples from a maximum coupling of two marginals.
+
+    If one has larger support than the other, the one with smaller support is
+    interpreted to place zero mass on the final atoms of the other
+    distribution.
+
+    Args:
+        loc_probs1, loc_probs2: marginal PMFs
+    Returns: sample from the coupling.
+    """
     # compute overlap pmf
     min_clusters = min([len(loc_probs1), len(loc_probs2)])
     overlap = np.min([loc_probs1[:min_clusters], loc_probs2[:min_clusters]], axis=0)
@@ -312,11 +297,8 @@ def max_coupling(loc_probs1, loc_probs2):
     newz2 = np.random.choice(len(loc_probs2), p=loc_probs2)
     return newz1, newz2
 
-# Code of optimal transport coupling
-
 def optimal_coupling(probs1, probs2, pairwise_dists, normalize=True, seed=None, change_size=100):
-    """
-    samples from a coupling that (approximately) minimizes the
+    """optimal_coupling samples from a coupling that (approximately) minimizes the
     average distance between variables. report the sample and the resulting distance.
 
     Args:
@@ -334,9 +316,7 @@ def optimal_coupling(probs1, probs2, pairwise_dists, normalize=True, seed=None, 
           optimal coupling, otherwise solve a Sinkhorn regularized optimal transport
           problem, which is faster but doesn't give the best coupling.
 
-    Returns:
-      optimal coupling (U,V) has the right marginals and (approximately)
-      minimizes E[d(x[i], y[j])].
+    Returns: sample from the coupling
     """
     K = probs1.shape[0]
     M = probs2.shape[0]
@@ -365,16 +345,25 @@ def optimal_coupling(probs1, probs2, pairwise_dists, normalize=True, seed=None, 
     if False:
         print("pairwise_dists", pairwise_dists)
         print("\n\nprobs1: %s\nprobs2: %s\nsample: %s"%(str(probs1), str(probs2), str(sample)))
-    return coupling_mat, sample, pairwise_dists[sample]
+    return sample
 
 def meeting_times_plots(
     traces_by_coupling, times_by_coupling, couplings_plot=['Optimal', 'Maximal', 'Common_RNG'],
     couplings_colors=['g','b','k'], nbins=10, title=None, save_path=None,
     alpha=1.0, linewidth=0.04, n_traces_plot=10, max_iter=None,
     iter_interval=None, max_time=None, plot_iter_not_time=False):
+    """meeting_times_plots generates plots used in figures 1 for the DP-MM
+    and graph-coloring simulations.
+
+    Arguments:
+        traces_by_coupling: list of list of traces (distance by iteration) for each
+            simulation, the outer list in coupling type.
+        times_by_coupling: list of list of meeting times (in seconds), the outer list in coupling type.
+        other args control the appearence of the plot
+    """
+
     # two subplots, for half of a one column page --> width = 2.9", Height 2.0"
-    #f, axarr = plt.subplots(ncols=2, figsize=[2.9, 2.0], dpi=300)
-    f, axarr = plt.subplots(ncols=2, figsize=[3.1, 2.0], dpi=300)
+    f, axarr = plt.subplots(ncols=2, figsize=[2.9, 2.0], dpi=300)
 
     # First plot Traces
     ax = axarr[0]

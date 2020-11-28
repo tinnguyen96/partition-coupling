@@ -25,6 +25,12 @@ from unbiased_estimation import run_two_chains, unbiased_est
 ## functions of interest
 
 def prop_in_k_clusters(z, k=10):
+    """prop_in_k_clusters computes the proportion of datapoints contained in
+    the largest clusters.  Including up to k largest clusters.
+
+    Returns: np.array of size k, the c'th entry contains the proportion of
+        data-points in the c largest clusters.
+    """
     # compute cluster sizes in decreasing order.
     clusts = utils.z_to_clusts(z)
     clust_sizes = list(sorted([len(clust) for clust in clusts], reverse=True))
@@ -239,14 +245,14 @@ def usual_MCMC_est_crp(k, h, m, data, sd, sd0, alpha, init_type="crp_prior"):
 # sanity checks -------
 
 if __name__ == "__main__":
-    
+
     data = stats.norm(loc=0, scale=5).rvs(size=100)
     z = np.ones(len(data))
     sd = 2.0
     sd0 = 1.0
     alpha = 1.0
     density_over_grid = posterior_predictive_density_1Dgrid(data[:,np.newaxis], z, sd, sd0, alpha)
-    
+
     plt.figure()
     plt.plot(density_over_grid[0,:], density_over_grid[1,:])
     plt.xlabel("x")
@@ -255,4 +261,4 @@ if __name__ == "__main__":
     savefigpath = "sanity_checks/test_posterior_predictive_density_1Dgrid.png"
     print("Will save figure to %s" %savefigpath)
     plt.savefig(savefigpath)
-    
+

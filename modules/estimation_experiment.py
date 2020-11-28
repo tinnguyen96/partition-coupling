@@ -1,22 +1,32 @@
-# Standard libaries
+"""estimation_experiment.py runs the processes which compute the parallel
+estimates reported in figure 2B.
+
+This runs on single cell RNA-Seq data released by (1) as processed and
+modeled by (2).
+
+See runtime argument flags below for details.
+
+References:
+(1) Amit Zeisel, Ana B Mun ̃oz-Manchado, Simone Codeluppi, Peter L ̈onnerberg, Gioele La Manno, Anna Jur ́eus, Sueli Marques, Hermany Munguba, Liqun He, Christer Betsholtz, et al. Cell types in the mouse cortex and hippocampus revealed by single-cell RNA-seq. Science, 347(6226):1138–1142, 2015.
+
+(2) Sandhya Prabhakaran, Elham Azizi, Ambrose Carr, and Dana Peer. Dirichlet process mixture model for correcting technical variation in single-cell gene expression data. In International Conference on Machine Learning, pages 1070–1079, 2016.
+"""
+
+# Standard libraries
 import argparse
-import os
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
+import os
+import pickle
 import numpy as np
-np.set_printoptions(precision=2)
 from scipy import stats
-import imp
+import sys
 import time
 try:
     clock = time.clock
 except AttributeError:
     clock = lambda : time.clock_gettime(1)
 
-import pickle
-
 # our implementation
-import sys
 sys.path.append("./modules/")
 import utils
 from sampling import gibbs_sweep_single
@@ -85,6 +95,7 @@ if (options.data_root == "gene"):
     data = load_gene_data(options.data_dir, options.Ndata, options.D)
 else:
     print("Currently not supported")
+    assert False
 
 print(options)
 
