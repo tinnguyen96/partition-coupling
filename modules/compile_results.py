@@ -11,7 +11,6 @@ from scipy import stats
 import matplotlib.pyplot as plt
 
 ## our code
-from meeting_time_experiment import num_seeds_from_root
 from estimate_utils import prop_in_k_clusters
 from unbiased_estimation import unbiased_est
 
@@ -175,3 +174,57 @@ def report_topK_performance(savedirroot, init_type, max_iter, save_saves,
 
         est_err_single, std_err_single = helper_estimators_topK_vary_single_chain(states_by_chain, topK, i, truthval)
         print("single\t--- Err +- SE : %f +- %f\n"%(est_err_single, std_err_single))
+        
+def compute_average_ppd(results):
+    """
+    Inputs:
+        results: list, typical outcome from predictive_experiment.py
+    """
+    index_range = range(len(results))
+    # extract distribution of meeting times. Get number of replicates that had no meeting
+    est_ub = []
+    unsuccessful_counts = 0
+    for i in index_range:
+        replicate = results[i]
+        if (replicate[1] is None):
+            unsuccessful_counts += 1
+        else:
+            est_ub.append(replicate[1])
+    print("Number of unsuccessful replicates out of total is %d / %d" %(unsuccessful_counts, len(index_range)))
+    average_est = np.mean(est_ub, axis=0)
+    return average_est, unsuccessful_counts
+
+def report_predictive_density(Ndata, tot_reps, savedirroot, true_density, init_type, max_time, k, m, print_title):
+    
+    h_type = "predictive"
+    # load estimates
+    estimatespath = savedirroot + "/coupled_estimates_totRep=%d_hType=%s_initType=%s_maxTime=%d_burnin=%d_minIter=%d.pkl" %(tot_reps, h_type, init_type, max_time,k,m)
+    print("Loading estimates from %s" %estimatespath)
+    estimates = pickle.load(open(estimatespath, "rb"))
+    print("Finished loading estimates")
+    average_ppd, unsuccessful_counts = compute_average_ppd(estimates)
+    
+    # overlay posterior predictive density with true density
+    assert np.allclose(true_density[0],average_ppd[0,:])
+    L1_diff = np.sum(np.abs(true_density[1]-average_ppd[1,:]))
+    
+    fontsize = 12
+    labelpad = -0.5
+    plt.figure(figsize=[3.25, 2.1])
+    plt.plot(true_density[0], true_density[1], linestyle='-.', label='True density', color='green')
+    tolerance = 0.001
+    plt.plot(average_ppd[0,:], average_ppd[1,:], label='Estimate', color='#2025df')
+    plt.xlabel(r"x",fontsize=fontsize,labelpad=labelpad)
+    plt.tick_params(axis='x', pad=-0.1)
+    plt.ylabel(r"Density",fontsize=fontsize, labelpad=labelpad)
+    title_str = 'N = %d, distance = %.2f' %(Ndata, L1_diff)
+    if (print_title):
+        plt.title(title_str)
+    plt.legend(loc='best', fontsize=fontsize-2)
+    savefigpath = savedirroot + "/coupled_estimates_hType=%s_initType=%s_maxTime=%d_burnin=%d_minIter=%d.png" %(h_type, init_type, max_time,k,m)
+    print("Will save figure to %s" %savefigpath)
+    # plt.tight_layout()
+    plt.savefig(savefigpath)
+    plt.show()
+    
+    return 
