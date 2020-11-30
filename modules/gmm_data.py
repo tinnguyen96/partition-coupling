@@ -171,4 +171,3 @@ if __name__ == "__main__":
     #for Ndata in Ndata_list:
     #    make_gmm_data(directory, D, Ndata, alpha, sd, sd0, K, seed)
     make_nested_gmm_data(Ndata, smallNdata_list, directory, D, alpha, sd, sd0, K, seed)
-

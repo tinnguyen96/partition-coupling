@@ -5,6 +5,8 @@ dependencies:
   - conda-forge::scikit-learn
   - conda-forge::scipy
   - conda-forge::matplotlib
+  - conda-forge::seaborn
   - conda-forge::pot
   - conda-forge::jupyter
   - conda-forge::ipykernel 
+  - conda-forge::python-igraph
