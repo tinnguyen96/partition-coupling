@@ -1,33 +1,17 @@
+"""unbiased_estimation.py provides utilities for unbiased estimation following (1).
+
+References:
+(1) Jacob, Pierre E., John O’Leary, and Yves F. Atchadé. "Unbiased Markov chain
+    Monte Carlo methods with couplings." Journal of the Royal Statistical Society:
+    Series B (Statistical Methodology) 82.3 (2020)
+"""
 import numpy as np
 import utils
-import time
 import time
 try:
     clock = time.clock
 except AttributeError:
     clock = lambda : time.clock_gettime(1)
-
-
-def prop_in_k_clusters(z, k=10):
-    # compute cluster sizes in decreasing order.
-    clusts = utils.z_to_clusts(z)
-    clust_sizes = list(sorted([len(clust) for clust in clusts], reverse=True))
-
-    # compute proportion of datapoints assigned to up to top k clusters.
-    props = np.ones(shape=[k])
-    props[:len(clust_sizes)] = np.cumsum(clust_sizes)[:k]/len(z)
-    return props
-
-def co_cluster(z):
-    """
-    Input:
-        z: (N,) vector of labels
-    Output:
-        mat: (N,N) matrix of whether two observations are in the same cluster
-    """
-    clusts = utils.z_to_clusts(z)
-    mat = utils.adj_matrix(z, clusts)
-    return mat
 
 def run_two_chains(m, pi0, single_transition, double_transition, time_budget):
     """run_two_chains runs two coupled chains for at least m steps and until
@@ -72,8 +56,7 @@ def run_two_chains(m, pi0, single_transition, double_transition, time_budget):
         t += 1
         time_elapsed = clock()-st
         time_elapsed_list.append(time_elapsed)
-        if (time_elapsed >= time_budget):
-            break
+        if (time_elapsed >= time_budget): break
 
     # used up compute time without meeting or if we haven't evolved enough
     # sweeps
@@ -86,26 +69,40 @@ def run_two_chains(m, pi0, single_transition, double_transition, time_budget):
 
 def unbiased_est(k, h, m, X, Y, tau):
     """computes an unbiased estimate from two coupled chains following
-    Jacob 2020 equation 2.1
+    equation 2.1 of Jacob 2020 (1).
+
+    Our notation here follows the notation in (1).
+
+    References:
+        (1) Jacob, Pierre E., John O’Leary, and Yves F. Atchadé. "Unbiased
+        Markov chain Monte Carlo methods with couplings." Journal of the Royal
+        Statistical Society: Series B (Statistical Methodology) 82.3 (2020)
+
+    Args:
+        k: burn-in
+        h: function of state, want to estimate E[h]
+        m: minimum number of iterations
+        X, Y: two Markov chains
+        tau: meeting time (iterations)
 
     """
     if tau is None:
         return None
-    else:
-        # check that the first chain was run an extra iteration
-        assert len(X) == len(Y)+1
 
-        # check that burn in is less than number of MC iterations
-        assert m > k
-        assert len(X) >= m
+    # check that the first chain was run an extra iteration
+    assert len(X) == len(Y)+1
 
-        # compute first term (usual MCMC estimate)
-        term1 = np.mean([h(x) for x in X[k:m+1]], axis=0) # X_k to X_m (remember that X[0] is X_0)
+    # check that burn in is less than number of MC iterations
+    assert m > k
+    assert len(X) >= m
 
-        # compute second term (bias correction)
-        ls = np.arange(k+1, tau)
-        term2_scalings = np.array([min([1, (l-k)/(m-k+1)]) for l in ls])
-        term2_diffs = np.array([h(X[l]) - h(Y[l-1]) for l in ls])
-        term2 = np.tensordot(term2_scalings, term2_diffs, axes=[[0],[0]])
+    # compute first term (usual MCMC estimate)
+    term1 = np.mean([h(x) for x in X[k:m+1]], axis=0) # X_k to X_m (remember that X[0] is X_0)
 
-        return term1 + term2
+    # compute second term (bias correction)
+    ls = np.arange(k+1, tau)
+    term2_scalings = np.array([min([1, (l-k)/(m-k+1)]) for l in ls])
+    term2_diffs = np.array([h(X[l]) - h(Y[l-1]) for l in ls])
+    term2 = np.tensordot(term2_scalings, term2_diffs, axes=[[0],[0]])
+
+    return term1 + term2
