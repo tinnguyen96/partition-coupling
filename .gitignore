@@ -1,5 +1,9 @@
 # Large data files
-figure2_results/
+*.pkl
+*.png
+
+# Redundant notebook
+Change save format.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

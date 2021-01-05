@@ -31,3 +31,7 @@ Interactive Supercomputing on 40,000 Cores for Machine Learning and Data Analysi
 
 <a id="3"> [3] </a>
 Sandhya Prabhakaran, Elham Azizi, Ambrose Carr, and Dana Peer. Dirichlet process mixture model for correcting technical variation in single-cell gene expression data. In International Conference on Machine Learning, pages 1070–1079, 2016.
+
+
+## Copy-paste commands
+cp ../coupling-crp-chains/estimation_results_postBug/nestedGMM_D\=1_N\=200_alpha\=0.50_sd\=2.00_sd0\=10.00_K\=10_seed\=0/sd\=2.00_sd0\=3.00_alpha\=1.00/coupled_estimates_totRep\=10000_hType\=predictive_initType\=crp_prior_maxTime\=300_burnin\=10_minIter\=100.pkl fclearigure2_results/

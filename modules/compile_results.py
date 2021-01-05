@@ -175,34 +175,55 @@ def report_topK_performance(savedirroot, init_type, max_iter, save_saves,
         est_err_single, std_err_single = helper_estimators_topK_vary_single_chain(states_by_chain, topK, i, truthval)
         print("single\t--- Err +- SE : %f +- %f\n"%(est_err_single, std_err_single))
         
-def compute_average_ppd(results):
+def compute_average_ppd(results, ext="pkl"):
     """
     Inputs:
         results: list, typical outcome from predictive_experiment.py
     """
-    index_range = range(len(results))
-    # extract distribution of meeting times. Get number of replicates that had no meeting
-    est_ub = []
-    unsuccessful_counts = 0
-    for i in index_range:
-        replicate = results[i]
-        if (replicate[1] is None):
-            unsuccessful_counts += 1
-        else:
-            est_ub.append(replicate[1])
-    print("Number of unsuccessful replicates out of total is %d / %d" %(unsuccessful_counts, len(index_range)))
+    if (ext == "pkl"):
+        index_range = range(len(results))
+        # extract distribution of meeting times. Get number of replicates that had no meeting
+        est_ub = []
+        unsuccessful_counts = 0
+        for i in index_range:
+            replicate = results[i]
+            if (replicate[1] is None):
+                unsuccessful_counts += 1
+            else:
+                est_ub.append(replicate[1])
+        total = len(index_range)
+
+    elif (ext == "npz"):
+        num_ests = results["num_ests"] # len = total number of replicates
+        est_ub = results["est_ub"] # len = number of successful replicates
+        unsuccessful_counts = np.sum(num_ests == 0)
+        total = len(num_ests)
+        
+    print("Number of unsuccessful replicates out of total is %d / %d" %(unsuccessful_counts, total))
     average_est = np.mean(est_ub, axis=0)
+        
     return average_est, unsuccessful_counts
 
-def report_predictive_density(Ndata, tot_reps, savedirroot, true_density, init_type, max_time, k, m, print_title):
+def report_predictive_density(Ndata, tot_reps, savedirroot, true_density, init_type, max_time, k, m, print_title, ext="pkl"):
+    
+    """
+    Plots true density and estimate of posterior predictive density. 
+    
+    Inputs:
+    
+    
+    """
     
     h_type = "predictive"
     # load estimates
-    estimatespath = savedirroot + "/coupled_estimates_totRep=%d_hType=%s_initType=%s_maxTime=%d_burnin=%d_minIter=%d.pkl" %(tot_reps, h_type, init_type, max_time,k,m)
+    estimatespath = savedirroot + "/coupled_estimates_totRep=%d_hType=%s_initType=%s_maxTime=%d_burnin=%d_minIter=%d.%s" %(tot_reps, h_type, init_type, max_time,k,m,ext)
     print("Loading estimates from %s" %estimatespath)
-    estimates = pickle.load(open(estimatespath, "rb"))
+    if (ext == "pkl"):
+        estimates = pickle.load(open(estimatespath, "rb"))
+    elif (ext == "npz"):
+        estimates = np.load(estimatespath) 
     print("Finished loading estimates")
-    average_ppd, unsuccessful_counts = compute_average_ppd(estimates)
+    average_ppd, unsuccessful_counts = compute_average_ppd(estimates, ext)
     
     # overlay posterior predictive density with true density
     assert np.allclose(true_density[0],average_ppd[0,:])
