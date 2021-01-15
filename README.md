@@ -1,16 +1,13 @@
-# coupling-Gibbs-partition
+# Optimal Transport Couplings of Gibbs Samplers on Partitions for Unbiased Estimation
+* [Associated Paper](https://openreview.net/forum?id=luJa4Gy5GYW) appearing in the 3rd Symposium on Advances in Approximate Bayesian Inference.
+* [Associated Talk](https://www.youtube.com/watch?v=0yFBWkOp4uc&t) on Youtube.
 
-Environment.yml
-- if we load anaconda environment OTcoupling and run "jupyter notebook" from the command line then the Jupyter Notebook can ``import ot''. But once in the Notebook, if we change kernels to ``OTcoupling'', we can't ``import OT''. 
 
-Figure 1 notebook
-
-- run_rep() calls np.random.seed(), so we technically won't be able to exactly replicate the meeting time plots
-- takes around 40 minutes to run on Stan's computer, with max_iter = 100
-
+## Figure 1
+* [Figure1.ipynb](Figure1.ipynb) replicates the analysis in Figure 1, simulating different couplings of Gibbs samplers for Dirichlet Process mixture models and graph coloring.
 
 ## Figure 2B
-We have also included the data and code we used to generate figure 2B so that anyone interested may view the details of our analysis.
+We have included the data and code we used to generate figure 2B so that anyone interested may view the details of our analysis.
 Howeve, because of the large computational resources demanded by this experiment
 and the differences we expect amongst the compute platforms that will be available 
 to those interested, we have not intended to make this analysis replicable on the press of a button (as with figure 1).
@@ -31,7 +28,3 @@ Interactive Supercomputing on 40,000 Cores for Machine Learning and Data Analysi
 
 <a id="3"> [3] </a>
 Sandhya Prabhakaran, Elham Azizi, Ambrose Carr, and Dana Peer. Dirichlet process mixture model for correcting technical variation in single-cell gene expression data. In International Conference on Machine Learning, pages 1070–1079, 2016.
-
-
-## Copy-paste commands
-cp ../coupling-crp-chains/estimation_results_postBug/nestedGMM_D\=1_N\=200_alpha\=0.50_sd\=2.00_sd0\=10.00_K\=10_seed\=0/sd\=2.00_sd0\=3.00_alpha\=1.00/coupled_estimates_totRep\=10000_hType\=predictive_initType\=crp_prior_maxTime\=300_burnin\=10_minIter\=100.pkl fclearigure2_results/
