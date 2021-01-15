@@ -6,13 +6,13 @@
 ## Figure 1
 * [Figure1.ipynb](Figure1.ipynb) replicates the analysis in Figure 1, simulating different couplings of Gibbs samplers for Dirichlet Process mixture models and graph coloring.
 
-## Figure 2B
-We have included the data and code we used to generate figure 2B so that anyone interested may view the details of our analysis.
-Howeve, because of the large computational resources demanded by this experiment
+## Figure 2
+We have included the data and code we used to generate figure 2 so that anyone interested may view the details of our analysis.
+However, because of the large computational resources demanded by these experiments
 and the differences we expect amongst the compute platforms that will be available 
-to those interested, we have not intended to make this analysis replicable on the press of a button (as with figure 1).
+to those interested, we have not intended to make this analysis replicable on the press of a button (as with Figure 1).
 For our experiments, we used [Supercloud](https://supercloud.mit.edu/) [[1]](#1).
-Instead we include the key pieces of our pipeline.
+Instead we include the key pieces of our pipeline:
 * [gene\_data\_Ndata=200\_D=50.csv](data/gene_data_Ndata=200_D=50.csv) contains the processed single-cell RNA-seq dataset.  This was initially published in [[2]](#2) and processed and modeled using a Dirichlet process mixture model (our starting point) by [[3]](#3).
 * [estimation\_experiment.sh](scripts/estimation_experiment.sh) is the script we used to run our parallel estimation experiments. This runs batches of parallel chains in sequence to simulate higher parallelism.
 * [compile\_results.py](modules/compile_results.py) contains helper functions we used to qualitatively evaluate the procedure while exploring its sensitivities to parameters on our own.
