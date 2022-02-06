@@ -1,0 +1,29 @@
+{
+    "dataName": "gene.csv",
+    "modelType": "mixture",
+    "modelArgs": {
+        "sd0": 0.5,
+        "sd1": 1.3,
+        "alpha": 1.0,
+        "sampleNonPartitionStr": "",
+        "sd1OverSd0": -1,
+        "separateSd": false
+    },
+    "resultsDir": "../results/",
+    "funcArgs": {
+        "hType": "LCP"
+    },
+    "samplerName": "DPMMCoupledGibbs",
+    "samplerArgs": {
+        "estType": "coupled",
+        "couplingArgs": {
+            "burnIn": 10,
+            "minIter": 50,
+            "GibbsCoupling": "OT=1e-5",
+            "metric": "Hamming"
+        },
+        "initType": "allSame",
+        "maxTime": -1,
+        "fastAssignment": false
+    }
+}

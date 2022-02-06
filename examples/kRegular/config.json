@@ -1,0 +1,31 @@
+{
+    "dataName": "kRegular.pkl",
+    "modelType": "graphColoring",
+    "modelArgs": {
+        "nColors": 4
+    },
+    "resultsDir": "../results/",
+    "funcArgs": {
+        "hType": "CC",
+        "CCIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+        ]
+    },
+    "samplerName": "GraphCoupled",
+    "samplerArgs": {
+        "estType": "coupled",
+        "couplingArgs": {
+            "burnIn": 1,
+            "minIter": 4,
+            "GibbsCoupling": "OT=1e-5",
+            "metric": "Hamming"
+        },
+        "initType": "greedy",
+        "maxTime": -1
+    }
+}

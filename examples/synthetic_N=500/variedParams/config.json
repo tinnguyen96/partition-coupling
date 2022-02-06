@@ -1,0 +1,29 @@
+{
+    "dataName": "synthetic_N=500.csv",
+    "modelType": "mixture",
+    "modelArgs": {
+        "sd0": 2.0,
+        "sd1": 0.5,
+        "alpha": 0.1,
+        "sampleNonPartitionStr": "means,sd,concentration",
+        "sd1OverSd0": 0.7,
+        "separateSd": true
+    },
+    "resultsDir": "../results/",
+    "funcArgs": {
+        "hType": "LCP"
+    },
+    "samplerName": "DPMMCoupledGibbs",
+    "samplerArgs": {
+        "estType": "coupled",
+        "couplingArgs": {
+            "burnIn": 5,
+            "minIter": 10,
+            "GibbsCoupling": "OT=1e-5",
+            "metric": "Hamming"
+        },
+        "initType": "allSame",
+        "maxTime": -1,
+        "fastAssignment": false
+    }
+}
